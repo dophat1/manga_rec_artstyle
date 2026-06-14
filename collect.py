@@ -4,6 +4,9 @@ import requests
 import os
 import json
 import time
+from PIL import Image
+from io import BytesIO
+
 
 BASE_URL = "https://api.mangadex.org"
 
@@ -93,7 +96,55 @@ def get_panel_urls(chapter_id):
 
     return urls
 
+def filter_panels(url):
 
+    try:
+        image = Image.open(BytesIO(requests.get(url).content))
+    except:
+        return False
+    
+    
+    pixels = np.array(image)
+    channel_means = pixels.mean(axis=(0, 1))
+    
+    
+    # Check for blank panels
+    if np.var(pixels) < 500:
+        return False
+    
+    # Check for too max text
+    elif np.mean(pixels) > 200:
+        return False
+    
+    # Check for color pages
+    elif  np.var(channel_means) > 500: # mean of each channel → 3 numbers
+        return False
+    
+    # Passed case
+    else:
+        return True
+
+def main(titles):
+    
+    for title in titles:
+        all_panels = []
+        manga_id = get_manga_id(title)
+        chapter_id = get_chapter_ids(manga_id)
+        os.makedirs(f"dataset/{title}", exist_ok=True)
+        for panel in chapter_id:
+            panel_urls = get_panel_urls(panel)
+            for panel_url in panel_urls:
+                checked_panel = filter_panels(panel_url)
+                if checked_panel == True:
+                    all_panels.append(panel_url)
+        
+        panel_number = 0 
+        for panel_url in all_panels:
+            image = Image.open(BytesIO(requests.get(panel_url).content))
+            image.save(f"dataset/{title}/panel_{panel_number:03d}.jpg")
+            panel_number += 1
+    
+    print("Successfully saved all panels")
 
 id = get_manga_id('Shitsurakue')
 url = get_panel_urls('56c214e7-3fb7-44d9-8f05-106c9959ba59')
