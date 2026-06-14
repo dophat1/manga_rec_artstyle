@@ -3,6 +3,7 @@ import numpy as np
 import requests
 import os
 import json
+import time
 
 BASE_URL = "https://api.mangadex.org"
 
@@ -34,27 +35,6 @@ def get_manga_id(title):
 6. Return sampled chapter IDs
 """
 
-def get_chapter_ids(manga_id): 
-    r = requests.get(
-        f"{BASE_URL}/manga/{manga_id}/feed"
-    )
-    chapter_ids = []
-    
-    if r.status_code == 200:
-        offset = 0 
-        limit = r.json()['limit']
-
-        for chapter in range(offset):
-            chapter_id = [chapter["id"] for chapter in r.json()['data']]
-            offset += limit 
-            chapter_ids.append(chapter_id)
-            if len(chapter_id) == 0:
-                raise ValueError("No chapter ID found")
-            else:
-                return chapter_id
-    else:
-        raise ValueError(f"There is no chapters found")
-
 def get_chapter_ids(manga_id: str, n_samples: int = 10) -> list[str]:
     """Fetch all chapter IDs for a manga, evenly sampled down to n_samples."""
     chapter_ids = []
@@ -77,6 +57,7 @@ def get_chapter_ids(manga_id: str, n_samples: int = 10) -> list[str]:
         chapter_ids.extend(ch["id"] for ch in payload["data"])
 
         offset += limit
+        time.sleep(0.5)
         if offset >= payload["total"]:
             break
 
@@ -89,6 +70,31 @@ def get_chapter_ids(manga_id: str, n_samples: int = 10) -> list[str]:
     step = (len(chapter_ids) - 1) / (n_samples - 1)
     return [chapter_ids[round(i * step)] for i in range(n_samples)]
 
+
+"""
+1.Make the HTTP request with the chapter ID
+2.Parse the JSON response
+3.Check if empty → raise error
+4.Extract full list of page image URLs
+5.Return the selected image URLs
+
+"""
+def get_panel_urls(chapter_id):
+    r = requests.get(
+        f"{BASE_URL}/at-home/server/{chapter_id}"
+    )
+    chapter_url = r.json()
+    if len(chapter_url["chapter"]["data"]) == 0:
+        raise ValueError("No pages found")
+    
+    chapter_hash = chapter_url["chapter"]["hash"]
+
+    urls = [ f"{chapter_url["baseUrl"]}/data/{chapter_hash}/{url}" for url in chapter_url["chapter"]["data"]]
+
+    return urls
+
+
+
 id = get_manga_id('Shitsurakue')
-chapter = get_chapter_ids(id)
-print(chapter)
+url = get_panel_urls('56c214e7-3fb7-44d9-8f05-106c9959ba59')
+print(url)
