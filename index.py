@@ -30,7 +30,7 @@ def build_index(embeddings):
 
     return index, titles
 
-def query_index(image_path):
+def query_index(image_path, titles, index):
     panels = Image.open(image_path)
     processed_image = transform(panels)
     
@@ -39,8 +39,8 @@ def query_index(image_path):
     
     vector = manga_tensor.numpy().reshape((1,1280)).astype(np.float32)
 
-    recs = index.search(vector, 3)
-    return recs
+    distances, indices = index.search(vector, 3)
+    return [titles[index_similar] for index_similar in indices[0]]
 
 
 
