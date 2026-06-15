@@ -1,0 +1,46 @@
+import faiss
+import numpy as np 
+from embed import transform, model
+from PIL import Image
+import torch
+
+"""
+prototype.numpy()
+prototype.numpy().reshape((1,1280)).astype(np.float32)
+index.add(vector)
+
+"""
+
+# Take a dictionary embeddings where keys are manga titles and values are prototype tensors
+def build_index(embeddings):
+
+    # Create a Faiss index
+    index = faiss.IndexFlatL2(1280)
+
+    titles = []
+
+    for manga, prototype_tensor in embeddings.items():
+        
+        vector = prototype_tensor.numpy().reshape((1,1280)).astype(np.float32)
+        # Add each vector to the index
+        index.add(vector)
+
+        # Track titles in a list
+        titles.append(manga)
+
+    return index, titles
+
+def query_index(image_path):
+    panels = Image.open(image_path)
+    processed_image = transform(panels)
+    
+    with torch.no_grad():
+        manga_tensor = model(torch.unsqueeze(processed_image, 0))
+    
+    vector = manga_tensor.numpy().reshape((1,1280)).astype(np.float32)
+
+    recs = index.search(vector, 3)
+    return recs
+
+
+

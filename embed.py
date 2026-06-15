@@ -15,7 +15,6 @@ def embedding_manga(title):
     
     images = [transform(Image.open(panel_file)) for panel_file in panels]
 
-    
     manga_tensor = torch.stack(images)
     
     # Run through the models, transform from (50, 3, 224, 224) to (50, 1280)
