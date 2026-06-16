@@ -139,13 +139,13 @@ def main(titles):
                     all_panels.append(panel_url)
         
         panel_number = 0 
-        for panel_url in all_panels:
+        for panel_url in all_panels[:50]:
             image = Image.open(BytesIO(requests.get(panel_url).content))
+            image = image.convert("RGB")
             image.save(f"dataset/{title}/panel_{panel_number:03d}.jpg")
             panel_number += 1
     
     print("Successfully saved all panels")
 
-id = get_manga_id('Shitsurakue')
-url = get_panel_urls('56c214e7-3fb7-44d9-8f05-106c9959ba59')
-print(url)
+if __name__ == "__main__":
+    main(['Bartender'])
